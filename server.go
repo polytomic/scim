@@ -58,6 +58,7 @@ type Server struct {
 	config        ServiceProviderConfig
 	resourceTypes []ResourceType
 	log           Logger
+	pathPrefix    string
 }
 
 func NewServer(args *ServerArgs, opts ...ServerOption) (Server, error) {
@@ -77,6 +78,7 @@ func NewServer(args *ServerArgs, opts ...ServerOption) (Server, error) {
 		config:        *args.ServiceProviderConfig,
 		resourceTypes: args.ResourceTypes,
 		log:           &noopLogger{},
+		pathPrefix:    "/v2",
 	}
 
 	for _, opt := range opts {
@@ -90,7 +92,7 @@ func NewServer(args *ServerArgs, opts ...ServerOption) (Server, error) {
 func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/scim+json")
 
-	path := strings.TrimPrefix(r.URL.Path, "/v2")
+	path := strings.TrimPrefix(r.URL.Path, s.pathPrefix)
 
 	switch {
 	case path == "/Me":
@@ -244,6 +246,14 @@ func WithLogger(logger Logger) ServerOption {
 	return func(s *Server) {
 		if logger != nil {
 			s.log = logger
+		}
+	}
+}
+
+func WithPathPrefix(prefix string) ServerOption {
+	return func(s *Server) {
+		if prefix != "" {
+			s.pathPrefix = prefix
 		}
 	}
 }
